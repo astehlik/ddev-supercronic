@@ -1,3 +1,4 @@
+#ddev-generated
 # Rename this file to time.cron to enable this example job.
 # It writes the current time to /var/www/html/time.log every minute.
 * * * * * date | tee -a /var/www/html/time.log
