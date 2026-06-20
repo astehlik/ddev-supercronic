@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - web-build/Dockerfile.supercronic
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Get current version from Dockerfile
+        id: current
+        run: |
+          VERSION=$(grep 'ARG SUPERCRONIC_VERSION=' web-build/Dockerfile.supercronic \
+            | sed 's/ARG SUPERCRONIC_VERSION=//')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUPERCRONIC_VERSION: ${{ steps.current.outputs.version }}
+        run: |
+          if gh release view "${SUPERCRONIC_VERSION}" > /dev/null 2>&1; then
+            echo "Release ${SUPERCRONIC_VERSION} already exists, skipping."
+          else
+            gh release create "${SUPERCRONIC_VERSION}" \
+              --title "${SUPERCRONIC_VERSION}" \
+              --notes "Updates supercronic to [${SUPERCRONIC_VERSION}](https://github.com/aptible/supercronic/releases/tag/${SUPERCRONIC_VERSION})."
+          fi
