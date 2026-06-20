@@ -8,6 +8,9 @@ on:
     paths-ignore:
       - "**.md"
 
+  release:
+    types: [published]
+
   schedule:
     - cron: "25 08 * * *"
 
