@@ -42,6 +42,10 @@ health_checks() {
 }
 
 time_cron_checks() {
+  for i in $(seq 1 90); do
+    [ -f time.log ] && break
+    sleep 1
+  done
   grep UTC time.log
   ddev exec crontab -l 2>/dev/null || true
 }
@@ -63,8 +67,6 @@ teardown() {
   run ddev restart -y
   assert_success
 
-  sleep 61
-
   health_checks
   time_cron_checks
 }
@@ -81,8 +83,6 @@ teardown() {
   run ddev restart -y
   assert_success
 
-  sleep 61
-
   health_checks
   time_cron_checks
 }
@@ -95,8 +95,6 @@ teardown() {
 
   run ddev restart -y
   assert_success
-
-  sleep 61
 
   health_checks
 }
