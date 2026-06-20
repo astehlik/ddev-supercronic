@@ -7,12 +7,13 @@ on:
     inputs:
       force:
         type: boolean
-        description: Create release even if version is already up to date
+        description: Create PR even if version is already up to date
         required: false
         default: false
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   update:
@@ -93,23 +94,27 @@ jobs:
           sed -i "s|ARG SUPERCRONIC_SHA1SUM_ARM64=.*|ARG SUPERCRONIC_SHA1SUM_ARM64=${SUPERCRONIC_SHA1SUM_ARM64}|" \
             web-build/Dockerfile.supercronic
 
-      - name: Commit and push
-        if: steps.check.outputs.needed == 'true'
-        env:
-          SUPERCRONIC_VERSION: ${{ steps.latest.outputs.version }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add web-build/Dockerfile.supercronic
-          git commit -m "chore: update supercronic to ${SUPERCRONIC_VERSION}"
-          git push
-
-      - name: Create GitHub release
+      - name: Create pull request
         if: steps.check.outputs.needed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SUPERCRONIC_VERSION: ${{ steps.latest.outputs.version }}
         run: |
-          gh release create "${SUPERCRONIC_VERSION}" \
-            --title "${SUPERCRONIC_VERSION}" \
-            --notes "Updates supercronic to [${SUPERCRONIC_VERSION}](https://github.com/aptible/supercronic/releases/tag/${SUPERCRONIC_VERSION})."
+          BRANCH="update/supercronic-${SUPERCRONIC_VERSION}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${BRANCH}"
+          git add web-build/Dockerfile.supercronic
+          if git diff --cached --quiet; then
+            echo "Dockerfile already up to date, skipping PR."
+          else
+            git commit -m "chore: update supercronic to ${SUPERCRONIC_VERSION}"
+            git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}" \
+              "HEAD:refs/heads/${BRANCH}" --force
+            gh pr create \
+              --title "chore: update supercronic to ${SUPERCRONIC_VERSION}" \
+              --body "Updates supercronic to [${SUPERCRONIC_VERSION}](https://github.com/aptible/supercronic/releases/tag/${SUPERCRONIC_VERSION})." \
+              --base main \
+              --head "${BRANCH}" \
+              || echo "PR for ${BRANCH} already exists."
+          fi
