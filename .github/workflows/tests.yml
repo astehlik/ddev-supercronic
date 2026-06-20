@@ -1,16 +1,8 @@
 name: tests
 on:
   pull_request:
-    paths:
-      - install.yaml
-      - tests/**
-      - web-build/**
   push:
     branches: [main]
-    paths:
-      - install.yaml
-      - tests/**
-      - web-build/**
 
   release:
     types: [published]
