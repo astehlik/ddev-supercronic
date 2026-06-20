@@ -19,6 +19,4 @@ RUN mkdir -p /etc/supercronic
 COPY ./*.cron /etc/supercronic/
 RUN cat /etc/supercronic/*.cron > /etc/supercronic/crontab
 
-ARG username
-RUN printf '[program:supercronic]\ncommand=sudo -u %s supercronic /etc/supercronic/crontab\nautorestart=true\nstartretries=10\nstdout_logfile=/proc/self/fd/2\nstdout_logfile_maxbytes=0\nredirect_stderr=true\n' \
-    "$username" > /etc/supervisor/conf.d/supercronic.conf
+COPY ./supercronic.conf /etc/supervisor/conf.d/supercronic.conf

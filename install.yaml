@@ -2,6 +2,7 @@ name: ddev-supercronic
 
 project_files:
   - web-build/Dockerfile.supercronic
+  - web-build/supercronic.conf
   - web-build/supercronic-default.cron
   - web-build/time.cron.example
 
