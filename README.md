@@ -1,13 +1,16 @@
-# ddev-supercronic
+[![tests](https://github.com/astehlik/ddev-supercronic/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/astehlik/ddev-supercronic/actions/workflows/tests.yml?query=branch%3Amain)
+[![last commit](https://img.shields.io/github/last-commit/astehlik/ddev-supercronic)](https://github.com/astehlik/ddev-supercronic/commits)
+[![release](https://img.shields.io/github/v/release/astehlik/ddev-supercronic)](https://github.com/astehlik/ddev-supercronic/releases/latest)
 
-A [DDEV](https://ddev.com) add-on that installs
-[supercronic](https://github.com/aptible/supercronic) as a cron runner in the
-web container.
+# DDEV Supercronic
 
-Unlike the system `cron` daemon, supercronic inherits the full container
-environment, so all environment variables set by DDEV (e.g. `IS_DDEV_PROJECT`,
-database credentials, `TYPO3_CONTEXT`) are automatically available to cron jobs
-without any inline exports.
+A [DDEV](https://ddev.com) add-on that runs scheduled cron jobs in the web
+container using [Supercronic](https://github.com/aptible/supercronic).
+
+Unlike the system `cron` daemon, Supercronic inherits the full container
+environment — DDEV variables like `IS_DDEV_PROJECT`, database credentials, and
+`TYPO3_CONTEXT` are automatically available to every job without any inline
+exports.
 
 ## Installation
 
@@ -19,9 +22,12 @@ ddev restart
 ## Usage
 
 Add one or more `*.cron` files to `.ddev/web-build/`. Each file uses standard
-crontab syntax.
+crontab syntax (no username column).
 
-An example is provided at `.ddev/web-build/time.cron.example`. Rename it to
+On `ddev start`, all `.ddev/web-build/*.cron` files are concatenated into a
+single crontab and executed by Supercronic inside the web container.
+
+An example job is provided at `.ddev/web-build/time.cron.example`. Rename it to
 activate it:
 
 ```bash
@@ -29,11 +35,28 @@ mv .ddev/web-build/time.cron.example .ddev/web-build/time.cron
 ddev restart
 ```
 
-Example `.ddev/web-build/myproject.cron`:
+After at least a minute, `./time.log` should appear in your project root
+containing the current time written by the example job.
+
+## Examples
+
+Because Supercronic inherits the container environment, `IS_DDEV_PROJECT` and
+similar variables do not need to be set explicitly in cron files.
+
+### TYPO3 scheduler
 
 ```cron
 * * * * * cd /var/www/html && vendor/bin/typo3 scheduler:run
 ```
+
+Feel free to contribute own working examples for other systems.
+
+## Debugging
+
+- Use [crontab guru](https://crontab.guru/) to build schedule expressions.
+- Inspect the active crontab with `ddev exec cat /etc/supercronic/crontab`.
+- Connect to the web container with `ddev ssh` to run commands manually.
+- To run jobs on local time instead of UTC, set timezone in `.ddev/config.yaml`.
 
 ## Removal
 
@@ -43,6 +66,6 @@ ddev add-on remove astehlik/ddev-supercronic
 
 ## Versioning
 
-The add-on version tracks the supercronic version it ships. A GitHub Actions
-workflow checks for new supercronic releases every Monday and automatically
-publishes a new release.
+The add-on version tracks the Supercronic version it ships. A GitHub Actions
+workflow checks for new Supercronic releases every Monday and opens a pull
+request with the update.

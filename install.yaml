@@ -9,7 +9,7 @@ project_files:
 post_install_actions:
   - |
     #ddev-description: Add *.cron files to .ddev/web-build/ to schedule cron jobs.
-    echo "supercronic is installed. Add *.cron files to .ddev/web-build/ to schedule cron jobs."
+    echo "Supercronic is installed. Add *.cron files to .ddev/web-build/ to schedule cron jobs."
     echo "An example is provided at .ddev/web-build/time.cron.example — rename it to time.cron to activate it."
 
 removal_actions:

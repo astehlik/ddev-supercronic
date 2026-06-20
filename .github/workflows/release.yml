@@ -36,5 +36,5 @@ jobs:
           else
             gh release create "${SUPERCRONIC_VERSION}" \
               --title "${SUPERCRONIC_VERSION}" \
-              --notes "Updates supercronic to [${SUPERCRONIC_VERSION}](https://github.com/aptible/supercronic/releases/tag/${SUPERCRONIC_VERSION})."
+              --notes "Updates Supercronic to [${SUPERCRONIC_VERSION}](https://github.com/aptible/supercronic/releases/tag/${SUPERCRONIC_VERSION})."
           fi

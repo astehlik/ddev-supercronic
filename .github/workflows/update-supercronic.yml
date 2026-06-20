@@ -1,4 +1,4 @@
-name: Update supercronic
+name: Update Supercronic
 
 on:
   schedule:
@@ -24,7 +24,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Get latest supercronic version
+      - name: Get latest Supercronic version
         id: latest
         run: |
           VERSION=$(curl -fsSL https://api.github.com/repos/aptible/supercronic/releases/latest \
@@ -113,7 +113,7 @@ jobs:
               "HEAD:refs/heads/${BRANCH}" --force
             gh pr create \
               --title "chore: update supercronic to ${SUPERCRONIC_VERSION}" \
-              --body "Updates supercronic to [${SUPERCRONIC_VERSION}](https://github.com/aptible/supercronic/releases/tag/${SUPERCRONIC_VERSION})." \
+              --body "Updates Supercronic to [${SUPERCRONIC_VERSION}](https://github.com/aptible/supercronic/releases/tag/${SUPERCRONIC_VERSION})." \
               --base main \
               --head "${BRANCH}" \
               || echo "PR for ${BRANCH} already exists."
