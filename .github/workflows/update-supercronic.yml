@@ -24,6 +24,15 @@ jobs:
             | jq -r '.tag_name')
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
+      - name: Validate version tag format
+        env:
+          LATEST_VERSION: ${{ steps.latest.outputs.version }}
+        run: |
+          if [[ ! "${LATEST_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: upstream version '${LATEST_VERSION}' does not match expected format vMAJOR.MINOR.PATCH."
+            exit 1
+          fi
+
       - name: Get current version from Dockerfile
         id: current
         run: |
