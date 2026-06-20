@@ -1,0 +1,14 @@
+name: ddev-supercronic
+
+project_files:
+  - web-build/Dockerfile.supercronic
+  - web-build/supercronic-default.cron
+  - web-build/time.cron.example
+
+removal_actions:
+  - |
+    if [ -f "${DDEV_APPROOT}/.ddev/web-build/time.cron" ]; then
+      echo "Note: .ddev/web-build/time.cron was not removed. Delete it manually if it is no longer needed."
+    fi
+
+ddev_version_constraint: ">= v1.24.3"

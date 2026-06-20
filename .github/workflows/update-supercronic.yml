@@ -1,0 +1,99 @@
+name: Update supercronic
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Every Monday at 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Get latest supercronic version
+        id: latest
+        run: |
+          VERSION=$(curl -fsSL https://api.github.com/repos/aptible/supercronic/releases/latest \
+            | jq -r '.tag_name')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Get current version from Dockerfile
+        id: current
+        run: |
+          VERSION=$(grep 'ARG SUPERCRONIC_VERSION=' web-build/Dockerfile.supercronic \
+            | sed 's/ARG SUPERCRONIC_VERSION=//')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Check if update is needed
+        id: check
+        env:
+          LATEST_VERSION: ${{ steps.latest.outputs.version }}
+          CURRENT_VERSION: ${{ steps.current.outputs.version }}
+        run: |
+          echo "Latest:  ${LATEST_VERSION}"
+          echo "Current: ${CURRENT_VERSION}"
+          if [ "${LATEST_VERSION}" != "${CURRENT_VERSION}" ]; then
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Already up to date."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compute checksums for new version
+        if: steps.check.outputs.needed == 'true'
+        id: checksums
+        env:
+          SUPERCRONIC_VERSION: ${{ steps.latest.outputs.version }}
+        run: |
+          BASE="https://github.com/aptible/supercronic/releases/download/${SUPERCRONIC_VERSION}"
+
+          curl -fsSL "${BASE}/supercronic-linux-amd64" -o /tmp/supercronic-amd64
+          AMD64=$(sha1sum /tmp/supercronic-amd64 | awk '{print $1}')
+
+          curl -fsSL "${BASE}/supercronic-linux-arm64" -o /tmp/supercronic-arm64
+          ARM64=$(sha1sum /tmp/supercronic-arm64 | awk '{print $1}')
+
+          echo "amd64=${AMD64}" >> "$GITHUB_OUTPUT"
+          echo "arm64=${ARM64}" >> "$GITHUB_OUTPUT"
+
+      - name: Update Dockerfile
+        if: steps.check.outputs.needed == 'true'
+        env:
+          SUPERCRONIC_VERSION: ${{ steps.latest.outputs.version }}
+          SUPERCRONIC_SHA1SUM_AMD64: ${{ steps.checksums.outputs.amd64 }}
+          SUPERCRONIC_SHA1SUM_ARM64: ${{ steps.checksums.outputs.arm64 }}
+        run: |
+          sed -i "s|ARG SUPERCRONIC_VERSION=.*|ARG SUPERCRONIC_VERSION=${SUPERCRONIC_VERSION}|" \
+            web-build/Dockerfile.supercronic
+          sed -i "s|ARG SUPERCRONIC_SHA1SUM_AMD64=.*|ARG SUPERCRONIC_SHA1SUM_AMD64=${SUPERCRONIC_SHA1SUM_AMD64}|" \
+            web-build/Dockerfile.supercronic
+          sed -i "s|ARG SUPERCRONIC_SHA1SUM_ARM64=.*|ARG SUPERCRONIC_SHA1SUM_ARM64=${SUPERCRONIC_SHA1SUM_ARM64}|" \
+            web-build/Dockerfile.supercronic
+
+      - name: Commit and push
+        if: steps.check.outputs.needed == 'true'
+        env:
+          SUPERCRONIC_VERSION: ${{ steps.latest.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add web-build/Dockerfile.supercronic
+          git commit -m "chore: update supercronic to ${SUPERCRONIC_VERSION}"
+          git push
+
+      - name: Create GitHub release
+        if: steps.check.outputs.needed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUPERCRONIC_VERSION: ${{ steps.latest.outputs.version }}
+        run: |
+          gh release create "${SUPERCRONIC_VERSION}" \
+            --title "${SUPERCRONIC_VERSION}" \
+            --notes "Updates supercronic to [${SUPERCRONIC_VERSION}](https://github.com/aptible/supercronic/releases/tag/${SUPERCRONIC_VERSION})."

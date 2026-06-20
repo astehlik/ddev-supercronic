@@ -1,0 +1,24 @@
+#ddev-generated
+ARG SUPERCRONIC_VERSION=v0.2.46
+ARG SUPERCRONIC_SHA1SUM_AMD64=5bcefed628e32adc08e32634db2d10e9230dbca0
+ARG SUPERCRONIC_SHA1SUM_ARM64=639ab81a72771990790df7ee87d9acfe88e5fa83
+
+ARG TARGETARCH
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+        amd64) SHA="${SUPERCRONIC_SHA1SUM_AMD64}" ;; \
+        arm64) SHA="${SUPERCRONIC_SHA1SUM_ARM64}" ;; \
+        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
+    esac; \
+    curl -fsSL "https://github.com/aptible/supercronic/releases/download/${SUPERCRONIC_VERSION}/supercronic-linux-${TARGETARCH}" \
+        -o /usr/local/bin/supercronic \
+    && echo "${SHA}  /usr/local/bin/supercronic" | sha1sum -c - \
+    && chmod +x /usr/local/bin/supercronic
+
+RUN mkdir -p /etc/supercronic
+COPY ./*.cron /etc/supercronic/
+RUN cat /etc/supercronic/*.cron > /etc/supercronic/crontab
+
+ARG username
+RUN printf '[program:supercronic]\ncommand=sudo -u %s supercronic /etc/supercronic/crontab\nautorestart=true\nstartretries=10\nstdout_logfile=/proc/self/fd/2\nstdout_logfile_maxbytes=0\nredirect_stderr=true\n' \
+    "$username" > /etc/supervisor/conf.d/supercronic.conf
