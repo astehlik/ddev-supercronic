@@ -58,6 +58,23 @@ Feel free to contribute own working examples for other systems.
 - Connect to the web container with `ddev ssh` to run commands manually.
 - To run jobs on local time instead of UTC, set timezone in `.ddev/config.yaml`.
 
+## Migrating from ddev-cron
+
+This add-on is a drop-in replacement for
+[ddev/ddev-cron](https://github.com/ddev/ddev-cron). Both use the same
+`.ddev/web-build/*.cron` file format and location, so existing cron files work
+without any changes.
+
+```bash
+ddev add-on remove ddev/ddev-cron
+ddev add-on get astehlik/ddev-supercronic
+ddev restart
+```
+
+Because Supercronic inherits the full container environment, any
+`IS_DDEV_PROJECT=true` or other explicit env var prefixes in your cron commands
+are no longer necessary, though leaving them in place is harmless.
+
 ## Removal
 
 ```bash
